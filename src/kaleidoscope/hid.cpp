@@ -19,6 +19,7 @@
 
 #include "Kaleidoscope.h"
 #include "KeyboardioHID.h"
+#include "BootKeyboard/BootKeyboard.h"
 
 namespace kaleidoscope {
 namespace hid {
@@ -26,12 +27,15 @@ namespace hid {
 __attribute__((weak))
 void initializeKeyboard() {
   Keyboard.begin();
+  BootKeyboard.begin();
 }
 
 __attribute__((weak))
 void pressRawKey(Key mappedKey) {
-  Keyboard.press(mappedKey.keyCode);
+  if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
+    BootKeyboard.press(mappedKey.keyCode);
 
+  Keyboard.press(mappedKey.keyCode);
 }
 
 __attribute__((weak))
@@ -77,12 +81,15 @@ void pressKey(Key mappedKey) {
 
 __attribute__((weak))
 void releaseRawKey(Key mappedKey) {
-  Keyboard.release(mappedKey.keyCode);
+  if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
+    BootKeyboard.release(mappedKey.keyCode);
 
+  Keyboard.release(mappedKey.keyCode);
 }
 
 __attribute__((weak))
 void releaseAllKeys() {
+  BootKeyboard.releaseAll();
   Keyboard.releaseAll();
   ConsumerControl.releaseAll();
 }
@@ -109,22 +116,36 @@ void releaseKey(Key mappedKey) {
 
 __attribute__((weak))
 boolean isModifierKeyActive(Key mappedKey) {
+  if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
+    return BootKeyboard.isModifierActive(mappedKey.keyCode);
+
   return Keyboard.isModifierActive(mappedKey.keyCode);
 }
 
 __attribute__((weak))
 boolean wasModifierKeyActive(Key mappedKey) {
+  if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
+    return BootKeyboard.wasModifierActive(mappedKey.keyCode);
+
   return Keyboard.wasModifierActive(mappedKey.keyCode);
 }
 
 __attribute__((weak))
 uint8_t getKeyboardLEDs() {
+  if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
+    return BootKeyboard.getLeds();
+
   return Keyboard.getLEDs();
 }
 
 
 __attribute__((weak))
 void sendKeyboardReport() {
+  if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL) {
+    BootKeyboard.sendReport();
+    return;
+  }
+
   Keyboard.sendReport();
   ConsumerControl.sendReport();
 }
