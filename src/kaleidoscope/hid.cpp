@@ -204,6 +204,7 @@ void releaseSystemControl(Key mappedKey) {
 
 // Mouse events
 
+#if !KALEIDOSCOPE_HIDADAPTOR_DISABLE_MOUSE
 void initializeMouse() {
   Mouse.begin();
 }
@@ -231,10 +232,32 @@ void releaseAllMouseButtons(void) {
 void sendMouseReport(void) {
   Mouse.sendReport();
 }
+#else
+void initializeMouse() {
+}
+
+void moveMouse(signed char x, signed char y, signed char vWheel, signed char hWheel) {
+}
+
+void clickMouseButtons(uint8_t buttons) {
+}
+
+void pressMouseButtons(uint8_t buttons) {
+}
+
+void releaseMouseButtons(uint8_t buttons) {
+}
+
+void releaseAllMouseButtons(void) {
+}
+
+void sendMouseReport(void) {
+}
+#endif
 
 /** SingleAbsolute mouse (grapahics tablet) events */
 
-#if !KALEIDOSCOPE_HIDADAPTOR_DISABLE_ABSOLUTE_MOUSE
+#if !KALEIDOSCOPE_HIDADAPTOR_DISABLE_ABSOLUTE_MOUSE && !KALEIDOSCOPE_HIDADAPTOR_DISABLE_MOUSE
 
 void initializeAbsoluteMouse() {
   SingleAbsoluteMouse.begin();
