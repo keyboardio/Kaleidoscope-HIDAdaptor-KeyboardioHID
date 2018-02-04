@@ -234,6 +234,8 @@ void sendMouseReport(void) {
 
 /** SingleAbsolute mouse (grapahics tablet) events */
 
+#if !KALEIDOSCOPE_HIDADAPTOR_DISABLE_ABSOLUTE_MOUSE
+
 void initializeAbsoluteMouse() {
   SingleAbsoluteMouse.begin();
 }
@@ -256,6 +258,27 @@ void pressAbsoluteMouseButtons(uint8_t buttons) {
 void releaseAbsoluteMouseButtons(uint8_t buttons) {
   SingleAbsoluteMouse.release(buttons);
 }
+
+#else
+
+void initializeAbsoluteMouse() {
+}
+
+void moveAbsoluteMouse(signed char x, signed char y, signed char wheel) {
+}
+void moveAbsoluteMouseTo(uint16_t x, uint16_t y, signed char wheel) {
+}
+
+void clickAbsoluteMouseButtons(uint8_t buttons) {
+}
+
+void pressAbsoluteMouseButtons(uint8_t buttons) {
+}
+
+void releaseAbsoluteMouseButtons(uint8_t buttons) {
+}
+
+#endif
 
 }
 };
