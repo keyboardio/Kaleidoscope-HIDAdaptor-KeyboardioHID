@@ -19,19 +19,49 @@
 
 #include "Kaleidoscope.h"
 #include "KeyboardioHID.h"
+
+#if !KALEIDOSCOPE_HIDADAPTOR_DISABLE_KEYBOARD_BOOT_PROTOCOL
 #include "BootKeyboard/BootKeyboard.h"
+
+/* These two macros are here to make code look nicer. The goal is that unless
+ * boot protocol support is disabled (it is enabled by default), we'll include
+ * the BootKeyboard fallback mechanism. Otherwise, we wrap calls in "if (0)"
+ * blocks, and let the compiler remove them.
+ */
+
+/** Fall back to BootKeyboard, if the HID protocol is Boot.
+ * Requires a block of code to follow.
+ */
+#define WITH_BOOTKEYBOARD_PROTOCOL if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
+/** Do something with BootKeyboard, if it is enabled.
+ * Requires a block of code to follow.
+ */
+#define WITH_BOOTKEYBOARD
+
+#else /* KALEIDOSCOPE_HIDADAPTOR_DISABLE_KEYBOARD_BOOT_PROTOCOL set */
+
+/* Wrap both macros in "if (0)", so that the compiler removes any code that
+ * follows.
+ */
+#define WITH_BOOTKEYBOARD_PROTOCOL if (0)
+#define WITH_BOOTKEYBOARD if (0)
+
+#endif
 
 namespace kaleidoscope {
 namespace hid {
 
 void initializeKeyboard() {
   Keyboard.begin();
-  BootKeyboard.begin();
+  WITH_BOOTKEYBOARD {
+    BootKeyboard.begin();
+  }
 }
 
 void pressRawKey(Key mappedKey) {
-  if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
+  WITH_BOOTKEYBOARD_PROTOCOL {
     BootKeyboard.press(mappedKey.keyCode);
+  }
 
   Keyboard.press(mappedKey.keyCode);
 }
@@ -76,14 +106,18 @@ void pressKey(Key mappedKey) {
 }
 
 void releaseRawKey(Key mappedKey) {
-  if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
+  WITH_BOOTKEYBOARD_PROTOCOL {
     BootKeyboard.release(mappedKey.keyCode);
+  }
 
   Keyboard.release(mappedKey.keyCode);
 }
 
 void releaseAllKeys() {
-  BootKeyboard.releaseAll();
+  WITH_BOOTKEYBOARD {
+    BootKeyboard.releaseAll();
+  }
+
   Keyboard.releaseAll();
   ConsumerControl.releaseAll();
 }
@@ -108,29 +142,32 @@ void releaseKey(Key mappedKey) {
 }
 
 boolean isModifierKeyActive(Key mappedKey) {
-  if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
+  WITH_BOOTKEYBOARD_PROTOCOL {
     return BootKeyboard.isModifierActive(mappedKey.keyCode);
+  }
 
   return Keyboard.isModifierActive(mappedKey.keyCode);
 }
 
 boolean wasModifierKeyActive(Key mappedKey) {
-  if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
+  WITH_BOOTKEYBOARD_PROTOCOL {
     return BootKeyboard.wasModifierActive(mappedKey.keyCode);
+  }
 
   return Keyboard.wasModifierActive(mappedKey.keyCode);
 }
 
 uint8_t getKeyboardLEDs() {
-  if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
+  WITH_BOOTKEYBOARD_PROTOCOL {
     return BootKeyboard.getLeds();
+  }
 
   return Keyboard.getLEDs();
 }
 
 
 void sendKeyboardReport() {
-  if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL) {
+  WITH_BOOTKEYBOARD_PROTOCOL {
     BootKeyboard.sendReport();
     return;
   }
