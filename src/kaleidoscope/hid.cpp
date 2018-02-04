@@ -24,13 +24,11 @@
 namespace kaleidoscope {
 namespace hid {
 
-__attribute__((weak))
 void initializeKeyboard() {
   Keyboard.begin();
   BootKeyboard.begin();
 }
 
-__attribute__((weak))
 void pressRawKey(Key mappedKey) {
   if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
     BootKeyboard.press(mappedKey.keyCode);
@@ -38,7 +36,6 @@ void pressRawKey(Key mappedKey) {
   Keyboard.press(mappedKey.keyCode);
 }
 
-__attribute__((weak))
 void _pressModifierKey(Key mappedKey) {
   pressRawKey(mappedKey);
 
@@ -58,7 +55,6 @@ void _pressModifierKey(Key mappedKey) {
   }
 }
 
-__attribute__((weak))
 void pressKey(Key mappedKey) {
   if (mappedKey.flags & SHIFT_HELD) {
     _pressModifierKey(Key_LeftShift);
@@ -79,7 +75,6 @@ void pressKey(Key mappedKey) {
   pressRawKey(mappedKey);
 }
 
-__attribute__((weak))
 void releaseRawKey(Key mappedKey) {
   if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
     BootKeyboard.release(mappedKey.keyCode);
@@ -87,14 +82,12 @@ void releaseRawKey(Key mappedKey) {
   Keyboard.release(mappedKey.keyCode);
 }
 
-__attribute__((weak))
 void releaseAllKeys() {
   BootKeyboard.releaseAll();
   Keyboard.releaseAll();
   ConsumerControl.releaseAll();
 }
 
-__attribute__((weak))
 void releaseKey(Key mappedKey) {
   if (mappedKey.flags & SHIFT_HELD) {
     releaseRawKey(Key_LeftShift);
@@ -114,7 +107,6 @@ void releaseKey(Key mappedKey) {
   releaseRawKey(mappedKey);
 }
 
-__attribute__((weak))
 boolean isModifierKeyActive(Key mappedKey) {
   if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
     return BootKeyboard.isModifierActive(mappedKey.keyCode);
@@ -122,7 +114,6 @@ boolean isModifierKeyActive(Key mappedKey) {
   return Keyboard.isModifierActive(mappedKey.keyCode);
 }
 
-__attribute__((weak))
 boolean wasModifierKeyActive(Key mappedKey) {
   if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
     return BootKeyboard.wasModifierActive(mappedKey.keyCode);
@@ -130,7 +121,6 @@ boolean wasModifierKeyActive(Key mappedKey) {
   return Keyboard.wasModifierActive(mappedKey.keyCode);
 }
 
-__attribute__((weak))
 uint8_t getKeyboardLEDs() {
   if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
     return BootKeyboard.getLeds();
@@ -139,7 +129,6 @@ uint8_t getKeyboardLEDs() {
 }
 
 
-__attribute__((weak))
 void sendKeyboardReport() {
   if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL) {
     BootKeyboard.sendReport();
@@ -150,33 +139,27 @@ void sendKeyboardReport() {
   ConsumerControl.sendReport();
 }
 
-__attribute__((weak))
 void initializeConsumerControl() {
   ConsumerControl.begin();
 }
 
-__attribute__((weak))
 void pressConsumerControl(Key mappedKey) {
   ConsumerControl.press(CONSUMER(mappedKey));
 }
 
-__attribute__((weak))
 void releaseConsumerControl(Key mappedKey) {
   ConsumerControl.release(CONSUMER(mappedKey));
 }
 
 
-__attribute__((weak))
 void initializeSystemControl() {
   SystemControl.begin();
 }
 
-__attribute__((weak))
 void pressSystemControl(Key mappedKey) {
   SystemControl.press(mappedKey.keyCode);
 }
 
-__attribute__((weak))
 void releaseSystemControl(Key mappedKey) {
   SystemControl.release();
 }
@@ -184,68 +167,55 @@ void releaseSystemControl(Key mappedKey) {
 
 // Mouse events
 
-__attribute__((weak))
 void initializeMouse() {
   Mouse.begin();
 }
 
-__attribute__((weak))
 void moveMouse(signed char x, signed char y, signed char vWheel, signed char hWheel) {
   Mouse.move(x, y, vWheel, hWheel);
 }
 
-__attribute__((weak))
 void clickMouseButtons(uint8_t buttons) {
   Mouse.click(buttons);
 }
 
-__attribute__((weak))
 void pressMouseButtons(uint8_t buttons) {
   Mouse.press(buttons);
 }
 
-__attribute__((weak))
 void releaseMouseButtons(uint8_t buttons) {
   Mouse.release(buttons);
 }
 
-__attribute__((weak))
 void releaseAllMouseButtons(void) {
   Mouse.releaseAll();
 }
 
-__attribute__((weak))
 void sendMouseReport(void) {
   Mouse.sendReport();
 }
 
 /** SingleAbsolute mouse (grapahics tablet) events */
 
-__attribute__((weak))
 void initializeAbsoluteMouse() {
   SingleAbsoluteMouse.begin();
 }
 
-__attribute__((weak))
 void moveAbsoluteMouse(signed char x, signed char y, signed char wheel) {
   SingleAbsoluteMouse.move(x, y, wheel);
 }
-__attribute__((weak))
 void moveAbsoluteMouseTo(uint16_t x, uint16_t y, signed char wheel) {
   SingleAbsoluteMouse.moveTo(x, y, wheel);
 }
 
-__attribute__((weak))
 void clickAbsoluteMouseButtons(uint8_t buttons) {
   SingleAbsoluteMouse.click(buttons);
 }
 
-__attribute__((weak))
 void pressAbsoluteMouseButtons(uint8_t buttons) {
   SingleAbsoluteMouse.press(buttons);
 }
 
-__attribute__((weak))
 void releaseAbsoluteMouseButtons(uint8_t buttons) {
   SingleAbsoluteMouse.release(buttons);
 }
