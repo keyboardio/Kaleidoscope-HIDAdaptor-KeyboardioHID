@@ -61,6 +61,7 @@ void initializeKeyboard() {
 void pressRawKey(Key mappedKey) {
   WITH_BOOTKEYBOARD_PROTOCOL {
     BootKeyboard.press(mappedKey.keyCode);
+    return;
   }
 
   Keyboard.press(mappedKey.keyCode);
@@ -108,6 +109,7 @@ void pressKey(Key mappedKey) {
 void releaseRawKey(Key mappedKey) {
   WITH_BOOTKEYBOARD_PROTOCOL {
     BootKeyboard.release(mappedKey.keyCode);
+    return;
   }
 
   Keyboard.release(mappedKey.keyCode);
