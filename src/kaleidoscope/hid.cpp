@@ -20,7 +20,7 @@
 #include "Kaleidoscope.h"
 #include "KeyboardioHID.h"
 
-#if !KALEIDOSCOPE_HIDADAPTOR_DISABLE_KEYBOARD_BOOT_PROTOCOL
+#if KALEIDOSCOPE_HIDADAPTOR_ENABLE_KEYBOARD_BOOT_PROTOCOL
 #include "BootKeyboard/BootKeyboard.h"
 
 /* These two macros are here to make code look nicer. The goal is that unless
@@ -38,7 +38,7 @@
  */
 #define WITH_BOOTKEYBOARD
 
-#else /* KALEIDOSCOPE_HIDADAPTOR_DISABLE_KEYBOARD_BOOT_PROTOCOL set */
+#else /* KALEIDOSCOPE_HIDADAPTOR_ENABLE_KEYBOARD_BOOT_PROTOCOL unset */
 
 /* Wrap both macros in "if (0)", so that the compiler removes any code that
  * follows.
@@ -206,7 +206,7 @@ void releaseSystemControl(Key mappedKey) {
 
 // Mouse events
 
-#if !KALEIDOSCOPE_HIDADAPTOR_DISABLE_MOUSE
+#if KALEIDOSCOPE_HIDADAPTOR_ENABLE_MOUSE
 void initializeMouse() {
   Mouse.begin();
 }
@@ -259,7 +259,7 @@ void sendMouseReport(void) {
 
 /** SingleAbsolute mouse (grapahics tablet) events */
 
-#if !KALEIDOSCOPE_HIDADAPTOR_DISABLE_ABSOLUTE_MOUSE && !KALEIDOSCOPE_HIDADAPTOR_DISABLE_MOUSE
+#if KALEIDOSCOPE_HIDADAPTOR_ENABLE_ABSOLUTE_MOUSE && KALEIDOSCOPE_HIDADAPTOR_ENABLE_MOUSE
 
 void initializeAbsoluteMouse() {
   SingleAbsoluteMouse.begin();
