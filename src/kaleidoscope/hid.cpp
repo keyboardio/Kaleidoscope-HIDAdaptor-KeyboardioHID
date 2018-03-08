@@ -19,26 +19,54 @@
 
 #include "Kaleidoscope.h"
 #include "KeyboardioHID.h"
+
+#if KALEIDOSCOPE_HIDADAPTOR_ENABLE_KEYBOARD_BOOT_PROTOCOL
 #include "BootKeyboard/BootKeyboard.h"
+
+/* These two macros are here to make code look nicer. The goal is that unless
+ * boot protocol support is disabled (it is enabled by default), we'll include
+ * the BootKeyboard fallback mechanism. Otherwise, we wrap calls in "if (0)"
+ * blocks, and let the compiler remove them.
+ */
+
+/** Fall back to BootKeyboard, if the HID protocol is Boot.
+ * Requires a block of code to follow.
+ */
+#define WITH_BOOTKEYBOARD_PROTOCOL if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
+/** Do something with BootKeyboard, if it is enabled.
+ * Requires a block of code to follow.
+ */
+#define WITH_BOOTKEYBOARD
+
+#else /* KALEIDOSCOPE_HIDADAPTOR_ENABLE_KEYBOARD_BOOT_PROTOCOL unset */
+
+/* Wrap both macros in "if (0)", so that the compiler removes any code that
+ * follows.
+ */
+#define WITH_BOOTKEYBOARD_PROTOCOL if (0)
+#define WITH_BOOTKEYBOARD if (0)
+
+#endif
 
 namespace kaleidoscope {
 namespace hid {
 
-__attribute__((weak))
 void initializeKeyboard() {
   Keyboard.begin();
-  BootKeyboard.begin();
+  WITH_BOOTKEYBOARD {
+    BootKeyboard.begin();
+  }
 }
 
-__attribute__((weak))
 void pressRawKey(Key mappedKey) {
-  if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
+  WITH_BOOTKEYBOARD_PROTOCOL {
     BootKeyboard.press(mappedKey.keyCode);
+    return;
+  }
 
   Keyboard.press(mappedKey.keyCode);
 }
 
-__attribute__((weak))
 void _pressModifierKey(Key mappedKey) {
   pressRawKey(mappedKey);
 
@@ -58,7 +86,6 @@ void _pressModifierKey(Key mappedKey) {
   }
 }
 
-__attribute__((weak))
 void pressKey(Key mappedKey) {
   if (mappedKey.flags & SHIFT_HELD) {
     _pressModifierKey(Key_LeftShift);
@@ -79,22 +106,24 @@ void pressKey(Key mappedKey) {
   pressRawKey(mappedKey);
 }
 
-__attribute__((weak))
 void releaseRawKey(Key mappedKey) {
-  if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
+  WITH_BOOTKEYBOARD_PROTOCOL {
     BootKeyboard.release(mappedKey.keyCode);
+    return;
+  }
 
   Keyboard.release(mappedKey.keyCode);
 }
 
-__attribute__((weak))
 void releaseAllKeys() {
-  BootKeyboard.releaseAll();
+  WITH_BOOTKEYBOARD {
+    BootKeyboard.releaseAll();
+  }
+
   Keyboard.releaseAll();
   ConsumerControl.releaseAll();
 }
 
-__attribute__((weak))
 void releaseKey(Key mappedKey) {
   if (mappedKey.flags & SHIFT_HELD) {
     releaseRawKey(Key_LeftShift);
@@ -114,34 +143,33 @@ void releaseKey(Key mappedKey) {
   releaseRawKey(mappedKey);
 }
 
-__attribute__((weak))
 boolean isModifierKeyActive(Key mappedKey) {
-  if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
+  WITH_BOOTKEYBOARD_PROTOCOL {
     return BootKeyboard.isModifierActive(mappedKey.keyCode);
+  }
 
   return Keyboard.isModifierActive(mappedKey.keyCode);
 }
 
-__attribute__((weak))
 boolean wasModifierKeyActive(Key mappedKey) {
-  if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
+  WITH_BOOTKEYBOARD_PROTOCOL {
     return BootKeyboard.wasModifierActive(mappedKey.keyCode);
+  }
 
   return Keyboard.wasModifierActive(mappedKey.keyCode);
 }
 
-__attribute__((weak))
 uint8_t getKeyboardLEDs() {
-  if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL)
+  WITH_BOOTKEYBOARD_PROTOCOL {
     return BootKeyboard.getLeds();
+  }
 
   return Keyboard.getLEDs();
 }
 
 
-__attribute__((weak))
 void sendKeyboardReport() {
-  if (BootKeyboard.getProtocol() == HID_BOOT_PROTOCOL) {
+  WITH_BOOTKEYBOARD_PROTOCOL {
     BootKeyboard.sendReport();
     return;
   }
@@ -150,33 +178,27 @@ void sendKeyboardReport() {
   ConsumerControl.sendReport();
 }
 
-__attribute__((weak))
 void initializeConsumerControl() {
   ConsumerControl.begin();
 }
 
-__attribute__((weak))
 void pressConsumerControl(Key mappedKey) {
   ConsumerControl.press(CONSUMER(mappedKey));
 }
 
-__attribute__((weak))
 void releaseConsumerControl(Key mappedKey) {
   ConsumerControl.release(CONSUMER(mappedKey));
 }
 
 
-__attribute__((weak))
 void initializeSystemControl() {
   SystemControl.begin();
 }
 
-__attribute__((weak))
 void pressSystemControl(Key mappedKey) {
   SystemControl.press(mappedKey.keyCode);
 }
 
-__attribute__((weak))
 void releaseSystemControl(Key mappedKey) {
   SystemControl.release();
 }
@@ -184,71 +206,104 @@ void releaseSystemControl(Key mappedKey) {
 
 // Mouse events
 
-__attribute__((weak))
+#if KALEIDOSCOPE_HIDADAPTOR_ENABLE_MOUSE
 void initializeMouse() {
   Mouse.begin();
 }
 
-__attribute__((weak))
 void moveMouse(signed char x, signed char y, signed char vWheel, signed char hWheel) {
   Mouse.move(x, y, vWheel, hWheel);
 }
 
-__attribute__((weak))
 void clickMouseButtons(uint8_t buttons) {
   Mouse.click(buttons);
 }
 
-__attribute__((weak))
 void pressMouseButtons(uint8_t buttons) {
   Mouse.press(buttons);
 }
 
-__attribute__((weak))
 void releaseMouseButtons(uint8_t buttons) {
   Mouse.release(buttons);
 }
 
-__attribute__((weak))
 void releaseAllMouseButtons(void) {
   Mouse.releaseAll();
 }
 
-__attribute__((weak))
 void sendMouseReport(void) {
   Mouse.sendReport();
 }
+#else
+void initializeMouse() {
+}
+
+void moveMouse(signed char x, signed char y, signed char vWheel, signed char hWheel) {
+}
+
+void clickMouseButtons(uint8_t buttons) {
+}
+
+void pressMouseButtons(uint8_t buttons) {
+}
+
+void releaseMouseButtons(uint8_t buttons) {
+}
+
+void releaseAllMouseButtons(void) {
+}
+
+void sendMouseReport(void) {
+}
+#endif
 
 /** SingleAbsolute mouse (grapahics tablet) events */
 
-__attribute__((weak))
+#if KALEIDOSCOPE_HIDADAPTOR_ENABLE_ABSOLUTE_MOUSE && KALEIDOSCOPE_HIDADAPTOR_ENABLE_MOUSE
+
 void initializeAbsoluteMouse() {
   SingleAbsoluteMouse.begin();
 }
 
-__attribute__((weak))
 void moveAbsoluteMouse(signed char x, signed char y, signed char wheel) {
   SingleAbsoluteMouse.move(x, y, wheel);
 }
-__attribute__((weak))
 void moveAbsoluteMouseTo(uint16_t x, uint16_t y, signed char wheel) {
   SingleAbsoluteMouse.moveTo(x, y, wheel);
 }
 
-__attribute__((weak))
 void clickAbsoluteMouseButtons(uint8_t buttons) {
   SingleAbsoluteMouse.click(buttons);
 }
 
-__attribute__((weak))
 void pressAbsoluteMouseButtons(uint8_t buttons) {
   SingleAbsoluteMouse.press(buttons);
 }
 
-__attribute__((weak))
 void releaseAbsoluteMouseButtons(uint8_t buttons) {
   SingleAbsoluteMouse.release(buttons);
 }
+
+#else
+
+void initializeAbsoluteMouse() {
+}
+
+void moveAbsoluteMouse(signed char x, signed char y, signed char wheel) {
+}
+void moveAbsoluteMouseTo(uint16_t x, uint16_t y, signed char wheel) {
+}
+
+void clickAbsoluteMouseButtons(uint8_t buttons) {
+}
+
+void pressAbsoluteMouseButtons(uint8_t buttons) {
+}
+
+void releaseAbsoluteMouseButtons(uint8_t buttons) {
+}
+
+#endif
 
 }
 };
