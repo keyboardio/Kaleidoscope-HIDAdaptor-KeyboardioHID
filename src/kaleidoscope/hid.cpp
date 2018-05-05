@@ -127,6 +127,7 @@ void releaseAllKeys() {
     BootKeyboard.releaseAll();
   }
 
+  mod_flags = 0;
   Keyboard.releaseAll();
   ConsumerControl.releaseAll();
 }
