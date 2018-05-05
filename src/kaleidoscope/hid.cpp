@@ -51,6 +51,9 @@
 namespace kaleidoscope {
 namespace hid {
 
+static byte mod_flags{0};
+static byte mod_flags_allowed{0};
+
 void initializeKeyboard() {
   Keyboard.begin();
   WITH_BOOTKEYBOARD {
@@ -67,21 +70,44 @@ void pressRawKey(Key mappedKey) {
   Keyboard.press(mappedKey.keyCode);
 }
 
-void pressKey(Key mappedKey) {
-  if (mappedKey.flags & SHIFT_HELD) {
+bool isPureModifier(Key mappedKey) {
+  if (mappedKey.flags & (SYNTHETIC | RESERVED))
+    return false;
+  byte offset_keycode = mappedKey.keyCode - Key_LeftControl.keyCode;
+  return (offset_keycode < 8);
+}
+
+void addModFlags(byte flags) {
+  mod_flags |= flags;
+}
+
+void setModFlagsMask(byte flags) {
+  mod_flags_allowed = flags;
+}
+
+void pressModFlags(byte flags) {
+  if (flags & SHIFT_HELD) {
     pressRawKey(Key_LeftShift);
   }
-  if (mappedKey.flags & CTRL_HELD) {
+  if (flags & CTRL_HELD) {
     pressRawKey(Key_LeftControl);
   }
-  if (mappedKey.flags & LALT_HELD) {
+  if (flags & LALT_HELD) {
     pressRawKey(Key_LeftAlt);
   }
-  if (mappedKey.flags & RALT_HELD) {
+  if (flags & RALT_HELD) {
     pressRawKey(Key_RightAlt);
   }
-  if (mappedKey.flags & GUI_HELD) {
+  if (flags & GUI_HELD) {
     pressRawKey(Key_LeftGui);
+  }
+}
+
+void pressKey(Key mappedKey) {
+  if (isPureModifier(mappedKey)) {
+    pressModFlags(mappedKey.flags);
+  } else {
+    addModFlags(mappedKey.flags);
   }
 
   pressRawKey(mappedKey);
@@ -150,6 +176,8 @@ uint8_t getKeyboardLEDs() {
 
 
 void sendKeyboardReport() {
+  pressModFlags(mod_flags & mod_flags_allowed);
+
   WITH_BOOTKEYBOARD_PROTOCOL {
     BootKeyboard.sendReport();
     return;
