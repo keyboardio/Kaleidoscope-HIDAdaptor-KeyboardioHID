@@ -51,24 +51,12 @@
 namespace kaleidoscope {
 namespace hid {
 
+// Anonymous namespace for internal variables and helper functions
+namespace {
+
 static byte mod_flags{0};
 static byte mod_flags_allowed{0};
-
-void initializeKeyboard() {
-  Keyboard.begin();
-  WITH_BOOTKEYBOARD {
-    BootKeyboard.begin();
-  }
-}
-
-void pressRawKey(Key mappedKey) {
-  WITH_BOOTKEYBOARD_PROTOCOL {
-    BootKeyboard.press(mappedKey.keyCode);
-    return;
-  }
-
-  Keyboard.press(mappedKey.keyCode);
-}
+static byte toggled_on_keycode{0};
 
 bool isPureModifier(Key mappedKey) {
   if (mappedKey.flags & (SYNTHETIC | RESERVED))
@@ -79,10 +67,6 @@ bool isPureModifier(Key mappedKey) {
 
 void addModFlags(byte flags) {
   mod_flags |= flags;
-}
-
-void setModFlagsMask(byte flags) {
-  mod_flags_allowed = flags;
 }
 
 void pressModFlags(byte flags) {
@@ -101,6 +85,30 @@ void pressModFlags(byte flags) {
   if (flags & GUI_HELD) {
     pressRawKey(Key_LeftGui);
   }
+}
+
+} // anonymous namespace
+
+void initializeKeyboard() {
+  Keyboard.begin();
+  WITH_BOOTKEYBOARD {
+    BootKeyboard.begin();
+  }
+}
+
+void setLastKeyPress(Key mappedKey) {
+  mod_flags_allowed = mappedKey.flags;
+  mod_flags = mappedKey.flags;
+  toggled_on_keycode = mappedKey.keyCode;
+}
+
+void pressRawKey(Key mappedKey) {
+  WITH_BOOTKEYBOARD_PROTOCOL {
+    BootKeyboard.press(mappedKey.keyCode);
+    return;
+  }
+
+  Keyboard.press(mappedKey.keyCode);
 }
 
 void pressKey(Key mappedKey) {
@@ -128,6 +136,7 @@ void releaseAllKeys() {
   }
 
   mod_flags = 0;
+  toggled_on_keycode = 0;
   Keyboard.releaseAll();
   ConsumerControl.releaseAll();
 }
@@ -177,12 +186,27 @@ uint8_t getKeyboardLEDs() {
 
 
 void sendKeyboardReport() {
+
   pressModFlags(mod_flags & mod_flags_allowed);
 
   WITH_BOOTKEYBOARD_PROTOCOL {
+    if (toggled_on_keycode) {
+      BootKeyboard.release(toggled_on_keycode);
+      BootKeyboard.sendReport();
+      BootKeyboard.press(toggled_on_keycode);
+    }
+    toggled_on_keycode = 0;
+
     BootKeyboard.sendReport();
     return;
   }
+
+  if (toggled_on_keycode) {
+    Keyboard.release(toggled_on_keycode);
+    Keyboard.sendReport();
+    Keyboard.press(toggled_on_keycode);
+  }
+  toggled_on_keycode = 0;
 
   Keyboard.sendReport();
   ConsumerControl.sendReport();
