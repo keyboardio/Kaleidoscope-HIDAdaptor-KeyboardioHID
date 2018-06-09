@@ -140,6 +140,14 @@ boolean wasModifierKeyActive(Key mappedKey) {
   return Keyboard.wasModifierActive(mappedKey.keyCode);
 }
 
+uint8_t getKeyswitchStateAtPosition(byte row, byte col) {
+  return KeyboardHardware.getKeyswitchStateAtPosition(row, col);
+}
+
+uint8_t getKeyswitchStateAtPosition(uint8_t keyIndex) {
+  return KeyboardHardware.getKeyswitchStateAtPosition(keyIndex);
+}
+
 uint8_t getKeyboardLEDs() {
   WITH_BOOTKEYBOARD_PROTOCOL {
     return BootKeyboard.getLeds();
