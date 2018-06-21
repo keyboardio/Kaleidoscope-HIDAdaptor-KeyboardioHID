@@ -75,6 +75,7 @@ static byte mod_flags_allowed{0};
 static byte toggled_on_keycode{0};
 
 // This returns true if the key is a keyboard key, and its keycode is a modifier.
+inline
 bool isPureModifier(Key mappedKey) {
   // If it's not a keyboard key, return false
   if (mappedKey.flags & (SYNTHETIC | RESERVED))
@@ -88,11 +89,13 @@ bool isPureModifier(Key mappedKey) {
 
 // This function adds modifier flags to the bitfield for current modifier flags that will
 // be added to the report after all keys are scanned.
+inline
 void addModFlags(byte flags) {
   current_mod_flags |= flags;
 }
 
 // This function actually adds the modifier flags to the upcoming report.
+inline
 void pressModFlags(byte flags) {
   if (flags & SHIFT_HELD) {
     pressRawKey(Key_LeftShift);
@@ -226,14 +229,22 @@ void sendKeyboardReport() {
   // based on the latest keypress:
   pressModFlags(current_mod_flags & mod_flags_allowed);
 
-  // If a key has just toggled on, we assume that the user expects that key's keycode to
-  // be sent as a new event immediately, so we make sure that a report is sent without
-  // that keycode. In the usual case, this won't result in any difference from the
-  // previous report, so no extra report will be sent. If there is a difference in the
-  // modifiers byte, an extra report would be sent later, regardless. The only time we
-  // should genuinely see an extra report from this is if we need one because a user
-  // rolled over from `X` to `x`, or if they've got a keymap with two `e` keys because
-  // they find it problematic to double-tap the same key frequently.
+
+  // If a key has just toggled on in this cycle, we might need to send an extra HID report
+  // to the host, because that key might have the same keycode as another key that was
+  // already in the report on the previous cycle. For example, a user could have two
+  // `Key_E` keys in their keymap, in order to avoid repeating the same key with one
+  // finger. Or one might have a `LCTRL(Key_S)` and a plain `Key_S`, and have a reason to
+  // press them in rapid succession. In order to make this work, we need to call
+  // `release()` & `sendReport()` to send a release event to the host so that its normal
+  // repeat-rate-limiting behaviour won't effectively mask the second keypress. Then we
+  // call `press()` to add the keycode back in before sending the normal report.
+  //
+  // In most cases, this won't result in any difference from the previous report (because
+  // the newly-toggled-on keycode won't be in the previous report), so no extra report
+  // will be sent (because we suppress duplicate reports in KeyboardioHID). If there is a
+  // difference in the modifiers byte, an extra report would be sent later, regardless
+  // (also in KeyboardioHID).
   WITH_BOOTKEYBOARD_PROTOCOL {
     if (toggled_on_keycode) {
       BootKeyboard.release(toggled_on_keycode);
