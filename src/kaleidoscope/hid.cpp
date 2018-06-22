@@ -127,8 +127,8 @@ void initializeKeyboard() {
 // without it, that modifier flag won't affect the new keypress.
 void setLastKeyPress(Key mappedKey) {
   mod_flags_allowed = mappedKey.flags;
-  current_mod_flags = mappedKey.flags;
   toggled_on_keycode = mappedKey.keyCode;
+  pressKey(mappedKey);
 }
 
 void pressRawKey(Key mappedKey) {
