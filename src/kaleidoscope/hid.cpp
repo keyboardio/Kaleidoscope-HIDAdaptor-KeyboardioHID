@@ -125,7 +125,7 @@ void initializeKeyboard() {
 // modifier flags that are allowed to be added to the upcoming report to the ones in the
 // key that just toggled on, so when we roll over from a key with a modifier flag to one
 // without it, that modifier flag won't affect the new keypress.
-void setLastKeyPress(Key mappedKey) {
+void pressToggledOnKey(Key mappedKey) {
   mod_flags_allowed = mappedKey.flags;
   toggled_on_keycode = mappedKey.keyCode;
   pressKey(mappedKey);
