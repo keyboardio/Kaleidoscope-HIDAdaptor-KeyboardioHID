@@ -76,7 +76,6 @@ static byte mod_flags_allowed{0};
 static byte newly_toggled_on_keycode{0};
 
 // This returns true if the key is a keyboard key, and its keycode is a modifier.
-inline
 bool isPureModifier(Key mappedKey) {
   // If it's not a keyboard key, return false
   if (mappedKey.flags & (SYNTHETIC | RESERVED))
@@ -87,13 +86,11 @@ bool isPureModifier(Key mappedKey) {
 
 // This function adds modifier flags to the bitfield for current modifier flags that will
 // be added to the report after all keys are scanned.
-inline
 void requestModFlags(byte flags) {
   requested_mod_flags |= flags;
 }
 
 // This function actually adds the modifier flags to the upcoming report.
-inline
 void pressModFlags(byte flags) {
   if (flags & SHIFT_HELD) {
     pressRawKey(Key_LeftShift);
