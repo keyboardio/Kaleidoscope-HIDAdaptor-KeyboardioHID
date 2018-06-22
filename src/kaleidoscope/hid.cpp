@@ -65,7 +65,7 @@ namespace {
 
 // A bitfield of the current modifier flags from keys processed so far in the current
 // keyswitch scan:
-static byte current_mod_flags{0};
+static byte requested_mod_flags{0};
 
 // The current set of modifier flags that will be allowed to be added to the upcoming
 // keyboard HID report. This should be set by the latest key pressed:
@@ -87,8 +87,8 @@ bool isPureModifier(Key mappedKey) {
 // This function adds modifier flags to the bitfield for current modifier flags that will
 // be added to the report after all keys are scanned.
 inline
-void addModFlags(byte flags) {
-  current_mod_flags |= flags;
+void requestModFlags(byte flags) {
+  requested_mod_flags |= flags;
 }
 
 // This function actually adds the modifier flags to the upcoming report.
@@ -145,12 +145,12 @@ void pressKey(Key mappedKey) {
   // directly to the report along with the modifier from its keycode byte. We assume that
   // the flagged modifiers are intended to also modify other keys pressed while this key
   // is held, so they are allowed unconditionally. If it's not a "pure" modifier key, we
-  // add them to current_mod_flags, and only allow them to affect the report if the latest
+  // add them to requested_mod_flags, and only allow them to affect the report if the latest
   // keypress includes those modifiers.
   if (isPureModifier(mappedKey)) {
     pressModFlags(mappedKey.flags);
   } else {
-    addModFlags(mappedKey.flags);
+    requestModFlags(mappedKey.flags);
   }
 
   pressRawKey(mappedKey);
@@ -170,7 +170,7 @@ void releaseAllKeys() {
     BootKeyboard.releaseAll();
   }
 
-  current_mod_flags = 0;
+  requested_mod_flags = 0;
   toggled_on_keycode = 0;
   Keyboard.releaseAll();
   ConsumerControl.releaseAll();
@@ -224,7 +224,7 @@ void sendKeyboardReport() {
 
   // Before sending the report, we add any modifier flags that are currently allowed,
   // based on the latest keypress:
-  pressModFlags(current_mod_flags & mod_flags_allowed);
+  pressModFlags(requested_mod_flags & mod_flags_allowed);
 
 
   // If a key has just toggled on in this cycle, we might need to send an extra HID report
