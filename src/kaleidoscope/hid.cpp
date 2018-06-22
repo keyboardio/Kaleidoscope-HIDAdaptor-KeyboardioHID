@@ -71,8 +71,9 @@ static byte requested_mod_flags{0};
 // keyboard HID report. This should be set by the latest key pressed:
 static byte mod_flags_allowed{0};
 
-// The keycode of the last key to toggle on. This get
-static byte toggled_on_keycode{0};
+// The keycode of the last key to toggle on. This gets set when a key is pressed, but is
+// cleared when the report is sent:
+static byte newly_toggled_on_keycode{0};
 
 // This returns true if the key is a keyboard key, and its keycode is a modifier.
 inline
@@ -127,7 +128,7 @@ void initializeKeyboard() {
 // without it, that modifier flag won't affect the new keypress.
 void pressToggledOnKey(Key mappedKey) {
   mod_flags_allowed = mappedKey.flags;
-  toggled_on_keycode = mappedKey.keyCode;
+  newly_toggled_on_keycode = mappedKey.keyCode;
   pressKey(mappedKey);
 }
 
@@ -171,7 +172,7 @@ void releaseAllKeys() {
   }
 
   requested_mod_flags = 0;
-  toggled_on_keycode = 0;
+  newly_toggled_on_keycode = 0;
   Keyboard.releaseAll();
   ConsumerControl.releaseAll();
 }
@@ -243,22 +244,22 @@ void sendKeyboardReport() {
   // difference in the modifiers byte, an extra report would be sent later, regardless
   // (also in KeyboardioHID).
   WITH_BOOTKEYBOARD_PROTOCOL {
-    if (toggled_on_keycode) {
-      BootKeyboard.release(toggled_on_keycode);
+    if (newly_toggled_on_keycode) {
+      BootKeyboard.release(newly_toggled_on_keycode);
       BootKeyboard.sendReport();
-      BootKeyboard.press(toggled_on_keycode);
-      toggled_on_keycode = 0;
+      BootKeyboard.press(newly_toggled_on_keycode);
+      newly_toggled_on_keycode = 0;
     }
 
     BootKeyboard.sendReport();
     return;
   }
 
-  if (toggled_on_keycode) {
-    Keyboard.release(toggled_on_keycode);
+  if (newly_toggled_on_keycode) {
+    Keyboard.release(newly_toggled_on_keycode);
     Keyboard.sendReport();
-    Keyboard.press(toggled_on_keycode);
-    toggled_on_keycode = 0;
+    Keyboard.press(newly_toggled_on_keycode);
+    newly_toggled_on_keycode = 0;
   }
 
   Keyboard.sendReport();
