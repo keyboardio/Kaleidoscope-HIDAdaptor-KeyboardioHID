@@ -80,11 +80,8 @@ bool isPureModifier(Key mappedKey) {
   // If it's not a keyboard key, return false
   if (mappedKey.flags & (SYNTHETIC | RESERVED))
     return false;
-  // An efficient way to check if the keycode is for a modifier. Key_LeftControl has the
-  // modifier keycode with the lowest value, and the others are sequential, and we use an
-  // unsigned integer so after subtraction, the comparison is simple.
-  byte offset_keycode = mappedKey.keyCode - Key_LeftControl.keyCode;
-  return (offset_keycode < 8);
+  return (mappedKey.keyCode >= HID_KEYBOARD_FIRST_MODIFIER &&
+          mappedKey.keyCode <= HID_KEYBOARD_LAST_MODIFIER);
 }
 
 // This function adds modifier flags to the bitfield for current modifier flags that will
