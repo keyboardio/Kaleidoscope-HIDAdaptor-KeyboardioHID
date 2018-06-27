@@ -124,7 +124,17 @@ void initializeKeyboard() {
 // key that just toggled on, so when we roll over from a key with a modifier flag to one
 // without it, that modifier flag won't affect the new keypress.
 void pressToggledOnKey(Key mappedKey) {
-  mod_flags_allowed = mappedKey.flags;
+  // In the event that two keys toggle on in the same scan cycle, we would ideally send an
+  // extra report so that each key gets processed fully, but this is problematic. If we
+  // simply allow the second new keypress's mod flags to take precedence, we can sometimes
+  // get a flag removed before the report is sent, so we simply allow flags from both
+  // keys. This is not ideal, but it is at worst the same as the previous behaviour, where
+  // rollover from a mod-flagged key would alway affect the second keypress.
+  if (newly_toggled_on_keycode != 0) {
+    mod_flags_allowed |= mappedKey.flags;
+  } else {
+    mod_flags_allowed = mappedKey.flags;
+  }
   newly_toggled_on_keycode = mappedKey.keyCode;
   pressKey(mappedKey);
 }
