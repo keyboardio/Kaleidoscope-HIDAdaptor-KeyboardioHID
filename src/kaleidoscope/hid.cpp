@@ -196,6 +196,10 @@ void moveMouse(signed char x, signed char y, signed char vWheel, signed char hWh
   Mouse.move(x, y, vWheel, hWheel);
 }
 
+void stopMouse(bool x, bool y, bool vWheel, bool hWheel) {
+  Mouse.stop(x, y, vWheel, hWheel);
+}
+
 void clickMouseButtons(uint8_t buttons) {
   Mouse.click(buttons);
 }
