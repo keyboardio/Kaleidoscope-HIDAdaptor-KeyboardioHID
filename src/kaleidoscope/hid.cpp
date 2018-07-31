@@ -197,7 +197,17 @@ void moveMouse(signed char x, signed char y, signed char vWheel, signed char hWh
 }
 
 void stopMouse(bool x, bool y, bool vWheel, bool hWheel) {
-  Mouse.stop(x, y, vWheel, hWheel);
+  HID_MouseReport_Data_t report = Mouse.getReport();
+
+  if (x)
+    report.xAxis = 0;
+  if (y)
+    report.yAxis = 0;
+  if (vWheel)
+    report.vWheel = 0;
+  if (hWheel)
+    report.hWheel = 0;
+  Mouse.move(report.xAxis, report.yAxis, report.vWheel, report.hWheel);
 }
 
 void clickMouseButtons(uint8_t buttons) {
