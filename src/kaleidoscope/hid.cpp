@@ -73,7 +73,7 @@ static uint8_t modifier_flag_mask{0};
 // keys other than the one with the flag. By using `modifier_flag_mask`, we can
 // mask out any modifier flags that aren't attached to modifier keys or keys
 // pressed or held in the most recent cycle, mitigating the rollover problem, 
-/  and getting the intended `The` instead of `THe`.
+//  and getting the intended `The` instead of `THe`.
 
 // requested_modifier_flags is bitmap of the modifiers attached to any non-modifier
 // key found to be pressed during the most recent cycle. For example, it would
