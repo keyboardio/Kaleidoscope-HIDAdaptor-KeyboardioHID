@@ -51,6 +51,94 @@
 namespace kaleidoscope {
 namespace hid {
 
+// This anonymous namespace encapsulates internal variables and helper 
+// functions related to how we handle modifiers like Ctrl, Alt, Shift, and GUI.
+
+namespace {
+
+// modifier_flag_mask is a bitmask of modifiers that we found attached to
+// keys that were newly pressed down during the most recent cycle with any new
+// keypresses.
+
+// This is used to determine which modifier flags will be allowed to be added to
+// the current keyboard HID report. It gets set during any cycle where one or
+// more new keys is toggled on and presists until the next cycle with a newly
+// detected keypress.
+
+static uint8_t modifier_flag_mask{0};
+
+// The functions in this namespace are primarily to solve the problem of
+// rollover from a key with a modifier flag (e.g. `LSHIFT(Key_T)`) to one
+// without (e.g. `Key_H`), which used to result in the mod flag being applied to
+// keys other than the one with the flag. By using `modifier_flag_mask`, we can
+// mask out any modifier flags that aren't attached to modifier keys or keys
+// pressed or held in the most recent cycle, mitigating the rollover problem, 
+/  and getting the intended `The` instead of `THe`.
+
+// requested_modifier_flags is bitmap of the modifiers attached to any non-modifier
+// key found to be pressed during the most recent cycle. For example, it would
+// include modifiers attached to Key_A, but not modifiers attached to
+// Key_LeftControl
+
+static uint8_t requested_modifier_flags{0};
+
+// last_keycode_toggled_on is the keycode of the key most recently toggled on
+// for this report.  This is set when a keypress is first detected and cleared 
+// after the report is sent. If multiple keys are toggled on during a single
+// cycle, this contains the most recently handled one. 
+
+static uint8_t last_keycode_toggled_on{0};
+
+void resetModifierTracking(void) {
+  last_keycode_toggled_on = 0;
+  requested_modifier_flags = 0;
+}
+
+// isModifierKey takes a Key and returns true if the key is a 
+// keyboard key corresponding to a modifier like Control, Alt or Shift
+// TODO: This function should be lifted to the Kaleidoscope core, somewhere.
+
+bool isModifierKey(Key key) {
+  // If it's not a keyboard key, return false
+  if (key.flags & (SYNTHETIC | RESERVED)) return false;
+
+  return (key.keyCode >= HID_KEYBOARD_FIRST_MODIFIER &&
+          key.keyCode <= HID_KEYBOARD_LAST_MODIFIER);
+}
+
+// requestModifiers takes a bitmap of modifiers that might apply
+// to the next USB HID report and adds them to a bitmap of all such modifiers.
+
+void requestModifiers(byte flags) {
+  requested_modifier_flags |= flags;
+}
+
+// pressModifiers takes a bitmap of modifier keys that must be included in
+// the upcoming USB HID report and passes them through to KeyboardioHID
+// immediately
+
+void pressModifiers(byte flags) {
+  if (flags & SHIFT_HELD) {
+    pressRawKey(Key_LeftShift);
+  }
+  if (flags & CTRL_HELD) {
+    pressRawKey(Key_LeftControl);
+  }
+  if (flags & LALT_HELD) {
+    pressRawKey(Key_LeftAlt);
+  }
+  if (flags & RALT_HELD) {
+    pressRawKey(Key_RightAlt);
+  }
+  if (flags & GUI_HELD) {
+    pressRawKey(Key_LeftGui);
+  }
+}
+
+}  // namespace
+
+
+
 void initializeKeyboard() {
   Keyboard.begin();
   WITH_BOOTKEYBOARD {
@@ -58,42 +146,87 @@ void initializeKeyboard() {
   }
 }
 
-void pressRawKey(Key mappedKey) {
+// pressKey takes a Key, as well as optional boolean 'toggledOn' which defaults
+// to 'true'
+
+// If toggled_on is not set to false, this routine adds the modifier flags on
+// this key to the bitmask of modifiers that are allowed to be added to the
+// upcoming report. We do this so that when we roll over from a key with a
+// modifier flag to one without it, that modifier flag won't affect the new
+// keypress.
+
+// If the key we're processing is a modifier key, any modifier flags attached to
+// it are added directly to the report along with the modifier from its keycode
+// byte.
+//
+// (A 'modifier key' is one of the eight modifier keys defined by the HID
+// standard: left and right variants of Control, Shift, Alt, and GUI.)
+
+// Eventually it calls pressRawKey.
+
+void pressKey(Key pressed_key, boolean toggled_on) {
+  if (toggled_on) {
+    // If two keys are toggled on during the same USB report, we would ideally
+    // send an extra USB report to help the host handle each key correctly, but
+    // this is problematic.
+
+    // If we simply allow modifiers associated with the second newly-pressed
+    // key, it is possible to drop a modifier before the report is sent.
+    // Instead, we send modifiers associated with any newly-pressed keys.
+
+    // The downside of this behavior is that in cases where the user presses
+    // down keys with conflicting modifiers at the exact same moment, they may
+    // get unexpected behavior.
+
+    // If this is the first 'new' keycode being pressed in this cycle, reset the
+    // bitmask of modifiers we're willing to attach to USB HID keyboard reports
+    if (!last_keycode_toggled_on) {
+      modifier_flag_mask = 0;
+    }
+
+    // Add any modifiers attached to this key to the bitmask of modifiers we're
+    // willing to attach to USB HID keyboard reports
+    modifier_flag_mask |= pressed_key.flags;
+
+    last_keycode_toggled_on = pressed_key.keyCode;
+  }
+
+
+  if (isModifierKey(pressed_key)) {
+    // If the key is a modifier key with additional modifiers attached to it as
+    // flags (as one might when creating a 'Hyper' key or a "Control Alt" key, 
+    // we assume that all those modifiers are intended to modify other keys 
+    // pressed while this key is held, so they are never masked out.
+    pressModifiers(pressed_key.flags);
+  } else {
+    // If, instead, the modifiers are attached to a 'printable' or non-modifier
+    // key, we assume that they're not intended to modify other keys, so we add
+    // them to requested_modifier_flags, and only allow them to affect the report if
+    // the most recent keypress includes those modifiers.
+    requestModifiers(pressed_key.flags);
+  }
+
+  pressRawKey(pressed_key);
+}
+
+// pressRawKey takes a Key object and calles KeyboardioHID's ".press" method
+// with its keycode. It does no processing of any flags or modifiers on the key
+void pressRawKey(Key pressed_key) {
   WITH_BOOTKEYBOARD_PROTOCOL {
-    BootKeyboard.press(mappedKey.keyCode);
+    BootKeyboard.press(pressed_key.keyCode);
     return;
   }
 
-  Keyboard.press(mappedKey.keyCode);
+  Keyboard.press(pressed_key.keyCode);
 }
 
-void pressKey(Key mappedKey) {
-  if (mappedKey.flags & SHIFT_HELD) {
-    pressRawKey(Key_LeftShift);
-  }
-  if (mappedKey.flags & CTRL_HELD) {
-    pressRawKey(Key_LeftControl);
-  }
-  if (mappedKey.flags & LALT_HELD) {
-    pressRawKey(Key_LeftAlt);
-  }
-  if (mappedKey.flags & RALT_HELD) {
-    pressRawKey(Key_RightAlt);
-  }
-  if (mappedKey.flags & GUI_HELD) {
-    pressRawKey(Key_LeftGui);
-  }
-
-  pressRawKey(mappedKey);
-}
-
-void releaseRawKey(Key mappedKey) {
+void releaseRawKey(Key released_key) {
   WITH_BOOTKEYBOARD_PROTOCOL {
-    BootKeyboard.release(mappedKey.keyCode);
+    BootKeyboard.release(released_key.keyCode);
     return;
   }
 
-  Keyboard.release(mappedKey.keyCode);
+  Keyboard.release(released_key.keyCode);
 }
 
 void releaseAllKeys() {
@@ -101,43 +234,44 @@ void releaseAllKeys() {
     BootKeyboard.releaseAll();
   }
 
+  resetModifierTracking();
   Keyboard.releaseAll();
   ConsumerControl.releaseAll();
 }
 
-void releaseKey(Key mappedKey) {
-  if (mappedKey.flags & SHIFT_HELD) {
+void releaseKey(Key released_key) {
+  if (released_key.flags & SHIFT_HELD) {
     releaseRawKey(Key_LeftShift);
   }
-  if (mappedKey.flags & CTRL_HELD) {
+  if (released_key.flags & CTRL_HELD) {
     releaseRawKey(Key_LeftControl);
   }
-  if (mappedKey.flags & LALT_HELD) {
+  if (released_key.flags & LALT_HELD) {
     releaseRawKey(Key_LeftAlt);
   }
-  if (mappedKey.flags & RALT_HELD) {
+  if (released_key.flags & RALT_HELD) {
     releaseRawKey(Key_RightAlt);
   }
-  if (mappedKey.flags & GUI_HELD) {
+  if (released_key.flags & GUI_HELD) {
     releaseRawKey(Key_LeftGui);
   }
-  releaseRawKey(mappedKey);
+  releaseRawKey(released_key);
 }
 
-boolean isModifierKeyActive(Key mappedKey) {
+boolean isModifierKeyActive(Key modifier_key) {
   WITH_BOOTKEYBOARD_PROTOCOL {
-    return BootKeyboard.isModifierActive(mappedKey.keyCode);
+    return BootKeyboard.isModifierActive(modifier_key.keyCode);
   }
 
-  return Keyboard.isModifierActive(mappedKey.keyCode);
+  return Keyboard.isModifierActive(modifier_key.keyCode);
 }
 
-boolean wasModifierKeyActive(Key mappedKey) {
+boolean wasModifierKeyActive(Key modifier_key) {
   WITH_BOOTKEYBOARD_PROTOCOL {
-    return BootKeyboard.wasModifierActive(mappedKey.keyCode);
+    return BootKeyboard.wasModifierActive(modifier_key.keyCode);
   }
 
-  return Keyboard.wasModifierActive(mappedKey.keyCode);
+  return Keyboard.wasModifierActive(modifier_key.keyCode);
 }
 
 uint8_t getKeyboardLEDs() {
@@ -150,9 +284,44 @@ uint8_t getKeyboardLEDs() {
 
 
 void sendKeyboardReport() {
+  // Before sending the report, we add any modifier flags that are currently
+  // allowed, based on the latest keypress:
+  pressModifiers(requested_modifier_flags & modifier_flag_mask);
+
+  // If a key has been toggled on in this cycle, we might need to send an extra
+  // HID report to the host, because that key might have the same keycode as
+  // another key that was already in the report on the previous cycle. For
+  // example, a user could have two `Key_E` keys in their keymap, in order to
+  // avoid repeating the same key with one finger. Or one might have a
+  // `LCTRL(Key_S)` and a plain `Key_S`, and have a reason to press them in
+  // rapid succession. In order to make this work, we need to call `release()` &
+  // `sendReport()` to send a release event to the host so that its normal
+  // repeat-rate-limiting behaviour won't effectively mask the second keypress.
+  // Then we call `press()` to add the keycode back in before sending the normal
+  // report.
+  //
+  // In most cases, this won't result in any difference from the previous report
+  // (because the newly-toggled-on keycode won't be in the previous report), so
+  // no extra report will be sent (because we suppress duplicate reports in
+  // KeyboardioHID). If there is a difference in the modifiers byte, an extra
+  // report would be sent later, regardless (also in KeyboardioHID).
+
   WITH_BOOTKEYBOARD_PROTOCOL {
+    if (last_keycode_toggled_on) {
+      BootKeyboard.release(last_keycode_toggled_on);
+      BootKeyboard.sendReport();
+      BootKeyboard.press(last_keycode_toggled_on);
+      last_keycode_toggled_on = 0;
+    }
     BootKeyboard.sendReport();
     return;
+  }
+
+  if (last_keycode_toggled_on) {
+    Keyboard.release(last_keycode_toggled_on);
+    Keyboard.sendReport();
+    Keyboard.press(last_keycode_toggled_on);
+    last_keycode_toggled_on = 0;
   }
 
   Keyboard.sendReport();
