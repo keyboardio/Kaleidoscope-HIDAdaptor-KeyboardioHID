@@ -188,7 +188,9 @@ void pressKey(Key pressed_key, boolean toggled_on) {
     // willing to attach to USB HID keyboard reports
     modifier_flag_mask |= pressed_key.flags;
 
-    last_keycode_toggled_on = pressed_key.keyCode;
+    if (!isModifierKey(pressed_key)) {
+      last_keycode_toggled_on = pressed_key.keyCode;
+    }
   }
 
 
