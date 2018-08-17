@@ -135,6 +135,28 @@ void pressModifiers(byte flags) {
   }
 }
 
+// releaseModifiers takes a bitmap of modifier keys that must not be included in
+// the upcoming USB HID report and passes them through to KeyboardioHID
+// immediately
+
+void releaseModifiers(byte flags) {
+  if (flags & SHIFT_HELD) {
+    releaseRawKey(Key_LeftShift);
+  }
+  if (flags & CTRL_HELD) {
+    releaseRawKey(Key_LeftControl);
+  }
+  if (flags & LALT_HELD) {
+    releaseRawKey(Key_LeftAlt);
+  }
+  if (flags & RALT_HELD) {
+    releaseRawKey(Key_RightAlt);
+  }
+  if (flags & GUI_HELD) {
+    releaseRawKey(Key_LeftGui);
+  }
+}
+
 }  // namespace
 
 
@@ -242,21 +264,9 @@ void releaseAllKeys() {
 }
 
 void releaseKey(Key released_key) {
-  if (released_key.flags & SHIFT_HELD) {
-    releaseRawKey(Key_LeftShift);
   }
-  if (released_key.flags & CTRL_HELD) {
-    releaseRawKey(Key_LeftControl);
-  }
-  if (released_key.flags & LALT_HELD) {
-    releaseRawKey(Key_LeftAlt);
-  }
-  if (released_key.flags & RALT_HELD) {
-    releaseRawKey(Key_RightAlt);
-  }
-  if (released_key.flags & GUI_HELD) {
-    releaseRawKey(Key_LeftGui);
-  }
+
+  releaseModifiers(released_key.flags);
   releaseRawKey(released_key);
 }
 
