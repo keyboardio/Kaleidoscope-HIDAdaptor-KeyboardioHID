@@ -113,6 +113,13 @@ void requestModifiers(byte flags) {
   requested_modifier_flags |= flags;
 }
 
+// cancelModifierRequest takes a bitmap of modifiers that should no longer apply
+// to the next USB HID report and removes them from the bitmap of all such modifiers.
+
+void cancelModifierRequest(byte flags) {
+  requested_modifier_flags ^= flags;
+}
+
 // pressModifiers takes a bitmap of modifier keys that must be included in
 // the upcoming USB HID report and passes them through to KeyboardioHID
 // immediately
@@ -264,6 +271,23 @@ void releaseAllKeys() {
 }
 
 void releaseKey(Key released_key) {
+  // Remove any modifiers attached to this key from the bitmask of modifiers we're
+  // willing to attach to USB HID keyboard reports
+  modifier_flag_mask ^= released_key.flags;
+
+  if (!isModifierKey(released_key)) {
+
+    // TODO: this code is incomplete, but is better than nothing
+    // If we're toggling off the most recently toggled on key, clear
+    // last_keycode_toggled_on
+    if (last_keycode_toggled_on == released_key.keyCode) {
+      last_keycode_toggled_on = 0;
+    }
+
+    // If the modifiers are attached to a 'printable' or non-modifier
+    // key, we need to clean up after the key press which would have requested
+    // the modifiers be pressed if the most recent keypress includes those modifiers.
+    cancelModifierRequest(released_key.flags);
   }
 
   releaseModifiers(released_key.flags);
