@@ -49,7 +49,7 @@
 namespace kaleidoscope {
 namespace hid {
 
-// This anonymous namespace encapsulates internal variables and helper 
+// This anonymous namespace encapsulates internal variables and helper
 // functions related to how we handle modifiers like Ctrl, Alt, Shift, and GUI.
 
 namespace {
@@ -70,7 +70,7 @@ static uint8_t modifier_flag_mask{0};
 // without (e.g. `Key_H`), which used to result in the mod flag being applied to
 // keys other than the one with the flag. By using `modifier_flag_mask`, we can
 // mask out any modifier flags that aren't attached to modifier keys or keys
-// pressed or held in the most recent cycle, mitigating the rollover problem, 
+// pressed or held in the most recent cycle, mitigating the rollover problem,
 //  and getting the intended `The` instead of `THe`.
 
 // requested_modifier_flags is bitmap of the modifiers attached to any non-modifier
@@ -81,9 +81,9 @@ static uint8_t modifier_flag_mask{0};
 static uint8_t requested_modifier_flags{0};
 
 // last_keycode_toggled_on is the keycode of the key most recently toggled on
-// for this report.  This is set when a keypress is first detected and cleared 
+// for this report.  This is set when a keypress is first detected and cleared
 // after the report is sent. If multiple keys are toggled on during a single
-// cycle, this contains the most recently handled one. 
+// cycle, this contains the most recently handled one.
 
 static uint8_t last_keycode_toggled_on{0};
 
@@ -92,7 +92,7 @@ void resetModifierTracking(void) {
   requested_modifier_flags = 0;
 }
 
-// isModifierKey takes a Key and returns true if the key is a 
+// isModifierKey takes a Key and returns true if the key is a
 // keyboard key corresponding to a modifier like Control, Alt or Shift
 // TODO: This function should be lifted to the Kaleidoscope core, somewhere.
 
@@ -223,8 +223,8 @@ void pressKey(Key pressed_key, boolean toggled_on) {
 
   if (isModifierKey(pressed_key)) {
     // If the key is a modifier key with additional modifiers attached to it as
-    // flags (as one might when creating a 'Hyper' key or a "Control Alt" key, 
-    // we assume that all those modifiers are intended to modify other keys 
+    // flags (as one might when creating a 'Hyper' key or a "Control Alt" key,
+    // we assume that all those modifiers are intended to modify other keys
     // pressed while this key is held, so they are never masked out.
     pressModifiers(pressed_key.flags);
   } else {
