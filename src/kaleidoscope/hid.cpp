@@ -308,6 +308,22 @@ boolean wasModifierKeyActive(Key modifier_key) {
   return Keyboard.wasModifierActive(modifier_key.keyCode);
 }
 
+boolean isAnyModifierKeyActive() {
+  WITH_BOOTKEYBOARD_PROTOCOL {
+    return BootKeyboard.isAnyModifierActive();
+  }
+
+  return Keyboard.isAnyModifierActive();
+}
+
+boolean wasAnyModifierKeyActive() {
+  WITH_BOOTKEYBOARD_PROTOCOL {
+    return BootKeyboard.wasAnyModifierActive();
+  }
+
+  return Keyboard.wasAnyModifierActive();
+}
+
 uint8_t getKeyboardLEDs() {
   WITH_BOOTKEYBOARD_PROTOCOL {
     return BootKeyboard.getLeds();
