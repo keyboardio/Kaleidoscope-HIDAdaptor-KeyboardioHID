@@ -115,7 +115,7 @@ void requestModifiers(byte flags) {
 // to the next USB HID report and removes them from the bitmap of all such modifiers.
 
 void cancelModifierRequest(byte flags) {
-  requested_modifier_flags ^= flags;
+  requested_modifier_flags &= ~flags;
 }
 
 // pressModifiers takes a bitmap of modifier keys that must be included in
@@ -271,7 +271,7 @@ void releaseAllKeys() {
 void releaseKey(Key released_key) {
   // Remove any modifiers attached to this key from the bitmask of modifiers we're
   // willing to attach to USB HID keyboard reports
-  modifier_flag_mask ^= released_key.flags;
+  modifier_flag_mask &= ~released_key.flags;
 
   if (!isModifierKey(released_key)) {
 
