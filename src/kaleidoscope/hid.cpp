@@ -162,6 +162,12 @@ void releaseModifiers(byte flags) {
   }
 }
 
+// Backup versions of the three variables above so they can be restored after a mid-cycle
+// report is sent:
+static uint8_t stashed_modifier_flag_mask{0};
+static uint8_t stashed_requested_modifier_flags{0};
+static uint8_t stashed_last_keycode_toggled_on{0};
+
 }  // namespace
 
 
@@ -376,6 +382,38 @@ void sendKeyboardReport() {
 
   Keyboard.sendReport();
   ConsumerControl.sendReport();
+}
+
+// Store a copy of the current, incomplete keyboard report so that mid-cycle reports can
+// be sent based on the previous report instead. We also stash the modifier flags
+// variables; the big question is what to do with the current versions of
+// these. `last_keycode_toggled_on` should probably be cleared, and the others are likely
+// irrelevant because the modifier are already in the previous report.
+void stashKeyboardReport() {
+  stashed_modifier_flag_mask       = modifier_flag_mask;
+  stashed_requested_modifier_flags = requested_modifier_flags;
+  stashed_last_keycode_toggled_on  = last_keycode_toggled_on;
+  last_keycode_toggled_on = 0;
+
+  WITH_BOOTKEYBOARD_PROTOCOL {
+    BootKeyboard.stashReport();
+    return;
+  }
+  Keyboard.stashReport();
+}
+
+// Restore the stashed copy of the current, incomplete keyboard report (after sending a
+// mid-cycle report)
+void restoreKeyboardReport() {
+  modifier_flag_mask       = stashed_modifier_flag_mask;
+  requested_modifier_flags = stashed_requested_modifier_flags;
+  last_keycode_toggled_on  = stashed_last_keycode_toggled_on;
+
+  WITH_BOOTKEYBOARD_PROTOCOL {
+    BootKeyboard.restoreReport();
+    return;
+  }
+  Keyboard.restoreReport();
 }
 
 void initializeConsumerControl() {
