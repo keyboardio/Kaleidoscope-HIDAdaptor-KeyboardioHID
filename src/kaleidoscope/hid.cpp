@@ -358,9 +358,11 @@ void sendKeyboardReport() {
 
   WITH_BOOTKEYBOARD_PROTOCOL {
     if (last_keycode_toggled_on) {
-      BootKeyboard.release(last_keycode_toggled_on);
-      BootKeyboard.sendReport();
-      BootKeyboard.press(last_keycode_toggled_on);
+      if (BootKeyboard.wasKeyPressed(last_keycode_toggled_on)) {
+        BootKeyboard.release(last_keycode_toggled_on);
+        BootKeyboard.sendReport();
+        BootKeyboard.press(last_keycode_toggled_on);
+      }
       last_keycode_toggled_on = 0;
     }
     BootKeyboard.sendReport();
@@ -368,9 +370,11 @@ void sendKeyboardReport() {
   }
 
   if (last_keycode_toggled_on) {
-    Keyboard.release(last_keycode_toggled_on);
-    Keyboard.sendReport();
-    Keyboard.press(last_keycode_toggled_on);
+    if (Keyboard.wasKeyPressed(last_keycode_toggled_on)) {
+      Keyboard.release(last_keycode_toggled_on);
+      Keyboard.sendReport();
+      Keyboard.press(last_keycode_toggled_on);
+    }
     last_keycode_toggled_on = 0;
   }
 
