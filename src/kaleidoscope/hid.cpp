@@ -355,14 +355,20 @@ void sendKeyboardReport() {
   // no extra report will be sent (because we suppress duplicate reports in
   // KeyboardioHID). If there is a difference in the modifiers byte, an extra
   // report would be sent later, regardless (also in KeyboardioHID).
+  //
+  // Furthermore, we need to send a report without the keycode for the
+  // newly-toggled-on key, but with any masked modifiers from flags removed. For
+  // example, if we roll over from `LSHIFT(Key_A)` to `Key_B`, we need to first
+  // send a report without the `shift`, then a second report with the `B`. If
+  // both of those bits are changed in the same report, at least one major OS
+  // processes the `B` keypress first, and we end up with `AB` instead of `Ab`
+  // in the output.
 
   WITH_BOOTKEYBOARD_PROTOCOL {
     if (last_keycode_toggled_on) {
-      if (BootKeyboard.wasKeyPressed(last_keycode_toggled_on)) {
-        BootKeyboard.release(last_keycode_toggled_on);
-        BootKeyboard.sendReport();
-        BootKeyboard.press(last_keycode_toggled_on);
-      }
+      BootKeyboard.release(last_keycode_toggled_on);
+      BootKeyboard.sendReport();
+      BootKeyboard.press(last_keycode_toggled_on);
       last_keycode_toggled_on = 0;
     }
     BootKeyboard.sendReport();
@@ -370,11 +376,14 @@ void sendKeyboardReport() {
   }
 
   if (last_keycode_toggled_on) {
-    if (Keyboard.wasKeyPressed(last_keycode_toggled_on)) {
-      Keyboard.release(last_keycode_toggled_on);
-      Keyboard.sendReport();
-      Keyboard.press(last_keycode_toggled_on);
-    }
+    // It would be good if KeyboardioHID's Keyboard object offered a way to
+    // compare the modifiers bytes of the current and previous key reports. That
+    // would allow us to only send these extra reports when either
+    // `last_keycode_toggled_on` was already held, or the modifiers byte
+    // changed. Likewise for BootKeyboard above.
+    Keyboard.release(last_keycode_toggled_on);
+    Keyboard.sendReport();
+    Keyboard.press(last_keycode_toggled_on);
     last_keycode_toggled_on = 0;
   }
 
