@@ -16,12 +16,7 @@
  */
 
 #include "Kaleidoscope.h"
-
-#ifdef ARDUINO_VIRTUAL
-#include "VirtualHID.h"
-#else
 #include "KeyboardioHID.h"
-#endif
 
 #if KALEIDOSCOPE_HIDADAPTOR_ENABLE_KEYBOARD_BOOT_PROTOCOL
 #include "BootKeyboard/BootKeyboard.h"
