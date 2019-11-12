@@ -98,10 +98,10 @@ void resetModifierTracking(void) {
 
 bool isModifierKey(Key key) {
   // If it's not a keyboard key, return false
-  if (key.flags & (SYNTHETIC | RESERVED)) return false;
+  if (key.getFlags() & (SYNTHETIC | RESERVED)) return false;
 
-  return (key.keyCode >= HID_KEYBOARD_FIRST_MODIFIER &&
-          key.keyCode <= HID_KEYBOARD_LAST_MODIFIER);
+  return (key.getKeyCode() >= HID_KEYBOARD_FIRST_MODIFIER &&
+          key.getKeyCode() <= HID_KEYBOARD_LAST_MODIFIER);
 }
 
 // requestModifiers takes a bitmap of modifiers that might apply
@@ -213,10 +213,10 @@ void pressKey(Key pressed_key, boolean toggled_on) {
 
     // Add any modifiers attached to this key to the bitmask of modifiers we're
     // willing to attach to USB HID keyboard reports
-    modifier_flag_mask |= pressed_key.flags;
+    modifier_flag_mask |= pressed_key.getFlags();
 
     if (!isModifierKey(pressed_key)) {
-      last_keycode_toggled_on = pressed_key.keyCode;
+      last_keycode_toggled_on = pressed_key.getKeyCode();
     }
   }
 
@@ -226,13 +226,13 @@ void pressKey(Key pressed_key, boolean toggled_on) {
     // flags (as one might when creating a 'Hyper' key or a "Control Alt" key,
     // we assume that all those modifiers are intended to modify other keys
     // pressed while this key is held, so they are never masked out.
-    pressModifiers(pressed_key.flags);
+    pressModifiers(pressed_key.getFlags());
   } else {
     // If, instead, the modifiers are attached to a 'printable' or non-modifier
     // key, we assume that they're not intended to modify other keys, so we add
     // them to requested_modifier_flags, and only allow them to affect the report if
     // the most recent keypress includes those modifiers.
-    requestModifiers(pressed_key.flags);
+    requestModifiers(pressed_key.getFlags());
   }
 
   pressRawKey(pressed_key);
@@ -242,20 +242,20 @@ void pressKey(Key pressed_key, boolean toggled_on) {
 // with its keycode. It does no processing of any flags or modifiers on the key
 void pressRawKey(Key pressed_key) {
   WITH_BOOTKEYBOARD_PROTOCOL {
-    BootKeyboard.press(pressed_key.keyCode);
+    BootKeyboard.press(pressed_key.getKeyCode());
     return;
   }
 
-  Keyboard.press(pressed_key.keyCode);
+  Keyboard.press(pressed_key.getKeyCode());
 }
 
 void releaseRawKey(Key released_key) {
   WITH_BOOTKEYBOARD_PROTOCOL {
-    BootKeyboard.release(released_key.keyCode);
+    BootKeyboard.release(released_key.getKeyCode());
     return;
   }
 
-  Keyboard.release(released_key.keyCode);
+  Keyboard.release(released_key.getKeyCode());
 }
 
 void releaseAllKeys() {
@@ -271,41 +271,41 @@ void releaseAllKeys() {
 void releaseKey(Key released_key) {
   // Remove any modifiers attached to this key from the bitmask of modifiers we're
   // willing to attach to USB HID keyboard reports
-  modifier_flag_mask ^= released_key.flags;
+  modifier_flag_mask ^= released_key.getFlags();
 
   if (!isModifierKey(released_key)) {
 
     // TODO: this code is incomplete, but is better than nothing
     // If we're toggling off the most recently toggled on key, clear
     // last_keycode_toggled_on
-    if (last_keycode_toggled_on == released_key.keyCode) {
+    if (last_keycode_toggled_on == released_key.getKeyCode()) {
       last_keycode_toggled_on = 0;
     }
 
     // If the modifiers are attached to a 'printable' or non-modifier
     // key, we need to clean up after the key press which would have requested
     // the modifiers be pressed if the most recent keypress includes those modifiers.
-    cancelModifierRequest(released_key.flags);
+    cancelModifierRequest(released_key.getFlags());
   }
 
-  releaseModifiers(released_key.flags);
+  releaseModifiers(released_key.getFlags());
   releaseRawKey(released_key);
 }
 
 boolean isModifierKeyActive(Key modifier_key) {
   WITH_BOOTKEYBOARD_PROTOCOL {
-    return BootKeyboard.isModifierActive(modifier_key.keyCode);
+    return BootKeyboard.isModifierActive(modifier_key.getKeyCode());
   }
 
-  return Keyboard.isModifierActive(modifier_key.keyCode);
+  return Keyboard.isModifierActive(modifier_key.getKeyCode());
 }
 
 boolean wasModifierKeyActive(Key modifier_key) {
   WITH_BOOTKEYBOARD_PROTOCOL {
-    return BootKeyboard.wasModifierActive(modifier_key.keyCode);
+    return BootKeyboard.wasModifierActive(modifier_key.getKeyCode());
   }
 
-  return Keyboard.wasModifierActive(modifier_key.keyCode);
+  return Keyboard.wasModifierActive(modifier_key.getKeyCode());
 }
 
 boolean isAnyModifierKeyActive() {
@@ -409,7 +409,7 @@ void initializeSystemControl() {
 }
 
 void pressSystemControl(Key mappedKey) {
-  SystemControl.press(mappedKey.keyCode);
+  SystemControl.press(mappedKey.getKeyCode());
 }
 
 void releaseSystemControl(Key mappedKey) {
